@@ -1,4 +1,4 @@
-package de.bcb
+package de.bcb.block
 
 import de.bcb.transaction.Transaction
 

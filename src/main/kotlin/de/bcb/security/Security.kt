@@ -1,6 +1,8 @@
 package de.bcb.security
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.security.*
 
 
@@ -13,6 +15,7 @@ fun creKeyPair(algorithm: String = "RSA", keySize: Int = 1024): KeyPair {
 fun main(args: Array<String>) {
     val charset = StandardCharsets.UTF_8
 
+    /*
     val pair = creKeyPair()
 
     val sig = BcbSignature(
@@ -37,22 +40,19 @@ fun main(args: Array<String>) {
     System.out.println(verify)
     System.out.println(encrypt)
     System.out.println(decrypt)
+    */
 
-    /*
-    for(i in 1..7) {
+    for(i in 1..1) {
         val pair = creKeyPair()
 
-        val key = pair.private
+        val publicKey = BcbPublicKey(pair.public)
+        val privateKey = BcbPrivateKey(pair.private)
 
+        val p = Paths.get("$i")
 
-        val s = privateKeyToString(key)
-        val s2 = privateKeyToString(privateKeyFromString(s))
+        Files.createDirectory(p)
 
-        System.out.println("toString")
-        System.out.println(s)
-        System.out.println("fromString")
-        System.out.println(s2)
-        System.out.println(key == privateKeyFromString(s))
+        Files.write(p.resolve("public.key"), listOf(publicKey.toString(charset)))
+        Files.write(p.resolve("private.key"), listOf(privateKey.toString(charset)))
     }
-    */
 }
