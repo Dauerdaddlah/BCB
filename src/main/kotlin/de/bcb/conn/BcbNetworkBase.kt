@@ -7,6 +7,7 @@ abstract class BcbNetworkBase : BcbNetwork {
 
     private val conns: MutableMap<String, BcbConnectionBase> = Collections.synchronizedMap(mutableMapOf())
     private val connectListener = mutableListOf<(BcbConnection, BcbNetwork) -> Unit>()
+    private val msgListener = mutableListOf<(BcbMsg, BcbNetwork) -> Unit>()
 
     override val connectionNames: Set<String>
         get() {
@@ -88,6 +89,8 @@ abstract class BcbNetworkBase : BcbNetwork {
                 }
             }
         }
+
+        msgListener.forEach { it.invoke(msg, this) }
     }
 
     override fun connectTo(host: String, port: Int, name: String) {
@@ -123,5 +126,13 @@ abstract class BcbNetworkBase : BcbNetwork {
             conns.remove(nameOld)
             conn.name = name
         }
+    }
+
+    override fun onConnect(action: (BcbConnection, BcbNetwork) -> Unit) {
+        connectListener += action
+    }
+
+    override fun onMsgReceived(action: (BcbMsg, BcbNetwork) -> Unit) {
+        msgListener += action
     }
 }

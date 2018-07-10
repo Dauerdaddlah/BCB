@@ -16,4 +16,5 @@ interface BcbNetwork : Closeable {
     fun connectTo(host: String, port: Int = this.port, name: String = host)
 
     fun onConnect(action: (BcbConnection, BcbNetwork) -> Unit)
+    fun onMsgReceived(action: (BcbMsg, BcbNetwork) -> Unit)
 }
