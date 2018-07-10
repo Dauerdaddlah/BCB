@@ -4,19 +4,15 @@ import java.nio.charset.StandardCharsets
 import java.security.Signature
 import java.util.*
 
-class BcbSignature(
-        val publicKey: BcbPublicKey,
-        val privateKey: BcbPrivateKey?
+class BcbSignatureSystem(
+    val publicKey: BcbPublicKey,
+    val privateKey: BcbPrivateKey?
 ) {
     companion object {
         private val charset = StandardCharsets.UTF_8
     }
 
-    init {
-
-    }
-
-    fun sign(data: String): String {
+    fun sign(data: String): BcbSignature {
         if(privateKey == null) {
             TODO()
         }
@@ -29,19 +25,19 @@ class BcbSignature(
 
 
         return String(
-                Base64.getEncoder().encode(
-                        sign),
-                charset)
+            Base64.getEncoder().encode(
+                sign),
+            charset)
     }
 
-    fun verifySignature(data: String, signature: String): Boolean {
+    fun verifySignature(data: String, signature: BcbSignature): Boolean {
         return with(Signature.getInstance("SHA1withRSA"))
         {
             initVerify(publicKey.key)
             update(data.toByteArray(charset))
             verify(
                     Base64.getDecoder().decode(
-                            signature.toByteArray(charset)))
+                        signature.toByteArray(charset)))
         }
     }
 }

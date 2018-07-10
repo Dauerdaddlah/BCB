@@ -5,7 +5,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
 
-
 fun creKeyPair(algorithm: String = "RSA", keySize: Int = 1024): KeyPair {
     val gen = KeyPairGenerator.getInstance(algorithm)
     gen.initialize(keySize, SecureRandom())
@@ -18,10 +17,10 @@ fun main(args: Array<String>) {
     /*
     val pair = creKeyPair()
 
-    val sig = BcbSignature(
+    val sig = BcbSignatureSystem(
             BcbPublicKey(pair.public),
             BcbPrivateKey(pair.private))
-    val enc = BcbEncryption(
+    val enc = BcbEncryptionSystem(
             BcbPublicKey(pair.public),
             BcbPrivateKey(pair.private)
     )

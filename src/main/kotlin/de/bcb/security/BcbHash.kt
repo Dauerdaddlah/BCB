@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 class BcbHash(
-        private val hash: ByteArray
+    private val hash: ByteArray
 ) {
     companion object {
         private val charset = StandardCharsets.UTF_8

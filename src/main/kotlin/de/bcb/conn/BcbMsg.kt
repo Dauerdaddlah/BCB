@@ -5,7 +5,7 @@ import de.bcb.user
 data class BcbMsg(
     val type: String,
     val data: List<String>,
-    val sender: String
+    val sender: String = user.name
 ) {
     constructor(type: String, vararg data: String): this(type, data.asList(), user.name)
 }

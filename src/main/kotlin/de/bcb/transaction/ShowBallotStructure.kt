@@ -1,11 +1,10 @@
 package de.bcb.transaction
 
 import de.bcb.ballot.BcbBallotStructure
-import de.bcb.security.BcbSignature
+import de.bcb.security.BcbSignatureSystem
 
 class ShowBallotStructure(
         val numberElections: Int,
-        val ballotStructures: List<BcbBallotStructure>,
-        val signatureRoot: BcbSignature
-): Transaction {
+        val ballotStructures: List<BcbBallotStructure>
+): TransactionData {
 }
