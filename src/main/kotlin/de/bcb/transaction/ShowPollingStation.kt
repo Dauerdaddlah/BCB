@@ -5,8 +5,6 @@ import de.bcb.security.BcbSignatureSystem
 import java.security.PublicKey
 
 class ShowPollingStation(
-        val name: String,
-        val signatureKey: BcbPublicKey,
-        val encryptionKey: BcbPublicKey
+        val name: String
 ): TransactionData {
 }

@@ -1,9 +1,12 @@
 package de.bcb
 
+import de.bcb.ballot.BcbBallotStructure
+import de.bcb.ballot.BcbBallotsStructure
 import de.bcb.conn.BcbNetwork
 import de.bcb.conn.BcbNetworkImpl
 import de.bcb.security.BcbHasher
 import de.bcb.security.BcbSha2Hasher
+import de.bcb.transaction.*
 import java.lang.Exception
 
 fun main(args: Array<String>) {
@@ -12,70 +15,160 @@ fun main(args: Array<String>) {
     }
     val name = args[0]
 
-    initUser(name)
-    initNetwork(78965)
-    initDataPool()
-    initHasher()
+    initUsers()
+    initVoters()
+    initBallotStructure()
+    creGenesisBlock()
+    prepareBallots()
+    startBallots()
+}
 
-    network.start()
+private fun initUsers() {
+    env.users.add(BcbUser(nameRoot))
+    env.pollingStations += "LokalA"
+    env.pollingStations += "LokalB"
+    env.pollingStations += "LokalC"
 
-    TODO("Where to put network logic (how to react on each msg, handling incoming transactions, blocks, etc.)")
+    env.pollingStations.forEach { env.users.add(BcbUser(it)) }
+    env.users.add(BcbUser("LokalA"))
+    env.users.add(BcbUser("LokalB"))
+    env.users.add(BcbUser("LokalC"))
 
-    when(name) {
-        nameRoot -> {
-            RootLogic().start()
+    rootUser().tryLoadFromFiles()
+    env.pollingStations.map { user(it) }.forEach { it.tryLoadFromFiles() }
+}
+
+private fun initVoters() {
+    // station id name
+    var c1 = 'a' - 1
+    for (station in env.pollingStations) {
+        c1++
+        var count = 0
+        for (c2 in 'a'..'z') {
+            for (c3 in 'a'..'z') {
+                count++
+                env.voters += BcbVoter(
+                    pollingStation = station,
+                    id = count.toString(),
+                    name = "$c1$c2$c3"
+                )
+            }
         }
-        else -> {
-
-        }
     }
 }
 
-private fun initUser(name: String) {
-    if(::_user.isInitialized) {
-        throw IllegalStateException("User is already initialized")
-    }
-
-    _user = BcbUser(name)
-    user.tryLoadFromFiles()
+private fun initBallotStructure() {
+    env.structure = BcbBallotsStructure(
+        listOf(
+            BcbBallotStructure(
+            1,
+                listOf(
+                    "Ken Kannix",
+                    "Willi Willnix",
+                    "Michael machtnix",
+                    "Lukas Lügtnur",
+                    "Ulla Unvorsichtig",
+                    "Zoe Zerstörtalles",
+                    "Sarah Schläftimmer",
+                    "Björn Blöd-von-und-zu-betrunken"
+                )
+            ),
+            BcbBallotStructure(
+                1,
+                listOf(
+                    "SPD",
+                    "CDU",
+                    "DIe Grünen"
+                )
+            )
+        )
+    )
 }
 
-fun initNetwork(port: Int) {
-    if(::_network.isInitialized) {
-        throw IllegalStateException("Network is already initialized")
-    }
+private fun creGenesisBlock() {
+    val data = ShowRoot(
+        encryptionKey = rootUser().encryption!!.publicKey,
+        signatureKey = rootUser().signature!!.publicKey
+    )
 
-    _network = BcbNetworkImpl(port)
+    env.pool.addTransaction(
+        BcbTransaction(
+            data,
+            rootUser().signature!!.sign(data.toDataString())
+        )
+    )
+
+    env.pool.mine()
 }
 
-fun initDataPool() {
-    if(::_dataPool.isInitialized) {
-        throw IllegalStateException("Datapool is already initialized")
+fun prepareBallots() {
+    for (station in env.pollingStations) {
+        val data = ShowPollingStation(station)
+
+        env.pool.addTransaction(
+            BcbTransaction(
+                data,
+                rootUser().signature!!.sign(data.toDataString()),
+                user(station).signature!!.sign(data.toDataString())
+            )
+        )
+    }
+    for(voter in env.voters) {
+        val station = user(voter.pollingStation)
+        val data = ShowVoter(
+            voter.pollingStation,
+            station.encryption!!.encrypt(voter.toDataString()))
+
+        env.pool.addTransaction(
+            BcbTransaction(
+                data,
+                rootUser().signature!!.sign(data.toDataString()),
+                station.signature!!.sign(data.toDataString())
+            )
+        )
     }
 
-    _dataPool = BcbDataPool()
+    val data = ShowBallotStructure(env.structure)
+
+    env.pool.addTransaction(
+        BcbTransaction(
+            data,
+            rootUser().signature!!.sign(data.toDataString())
+        )
+    )
 }
 
-fun initHasher() {
-    if (::_hasher.isInitialized) {
-        throw IllegalStateException("Hasher is already initialized")
-    }
+fun startBallots() {
+    val data = StartBallot(
+        countPollingStations = env.pollingStations.size,
+        countVoters = env.voters.size.toLong(),
+        numElections = env.structure.structures.size
+    )
 
-    _hasher = BcbSha2Hasher()
+    env.pool.addTransaction(
+        BcbTransaction(
+            data,
+            rootUser().signature!!.sign(data.toDataString())
+        )
+    )
 }
 
-private lateinit var _user: BcbUser
-val user: BcbUser
-    get() = _user
+fun user(name: String): BcbUser {
+    return env.users.find { it.name == name }!!
+}
 
-private lateinit var _network: BcbNetwork
-val network: BcbNetwork
-    get() = _network
+inline fun rootUser(): BcbUser = user(nameRoot)
 
-private lateinit var _dataPool: BcbDataPool
-val dataPool: BcbDataPool
-    get() = _dataPool
+object env {
+    val users = mutableListOf<BcbUser>()
 
-private lateinit var _hasher: BcbHasher
-val hasher: BcbHasher
-    get() = _hasher
+    val pollingStations = mutableListOf<String>()
+
+    val pool = BcbDataPool()
+
+    val hasher: BcbHasher = BcbSha2Hasher()
+
+    val voters = mutableListOf<BcbVoter>()
+
+    var structure: BcbBallotsStructure = BcbBallotsStructure(emptyList())
+}

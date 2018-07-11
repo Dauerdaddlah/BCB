@@ -22,10 +22,6 @@ class BcbUser(val name: String) {
         private set
 
     fun tryLoadFromFiles() {
-        if (!root && name != user.name) {
-            TODO("only enable loading from file for my own user")
-        }
-
         val path = Paths.get("keys", name)
 
         if (!Files.exists(path))

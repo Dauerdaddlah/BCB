@@ -7,4 +7,8 @@ class BcbTransaction(
     val signatures: List<BcbSignature>
 ) {
     constructor(data: TransactionData, vararg signatures: BcbSignature) : this(data, signatures.asList())
+
+    fun toDataString(): String {
+        return "${data.toDataString()}|${signatures.joinToString("|")}"
+    }
 }

@@ -1,20 +1,25 @@
 package de.bcb.block
 
 import de.bcb.BcbTimestamp
+import de.bcb.BcbUser
 import de.bcb.BcbVersion
 import de.bcb.security.BcbHash
+import de.bcb.security.BcbSignature
+import de.bcb.transaction.BcbTransaction
+import java.time.LocalDateTime
 
 class BcbBlock (
-    var index: Int,
-    var prevHash: BcbHash,
-    var merkleHash: BcbHash,
+    val index: Int,
+    val prevHash: BcbHash,
     // proof-of-stake
     // erstellt über sha 256 der belegt, das er Zuständig war
-    var hash: BcbHash,
+    val hash: BcbHash,
     // wann wurde der de.bcb.Block erstellt
-    var timestamp: BcbTimestamp,
+    val timestamp: BcbTimestamp,
     // welche de.bcb.Version wird verwendet
-    var version: BcbVersion,
-    // öffentlich - von jedem einsehbar
-    var data: BcbBlockData
+    val version: BcbVersion,
+    val transactions: List<BcbTransaction>,
+
+    val creator: String,
+    val signature: BcbSignature
 )
