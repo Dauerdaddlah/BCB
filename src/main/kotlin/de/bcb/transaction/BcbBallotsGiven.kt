@@ -1,9 +1,8 @@
 package de.bcb.transaction
 
-import de.bcb.ballot.BcbBallot
+import de.bcb.ballot.BcbBallots
 
 class BcbBallotsGiven(
         val pollingStationName: String,
-        val ballot: List<BcbBallot>
-): BcbTransactionDataBase("BcbBallotsGiven", pollingStationName, ballot) {
-}
+        val ballots: BcbBallots
+): BcbTransactionDataBase("BcbBallotsGiven", pollingStationName, ballots)

@@ -17,13 +17,8 @@ class BcbDataPool {
         get() { return _transactions }
     private val _miners = mutableListOf<BcbUser>()
     val miners: List<BcbUser> = _miners
-    private val _voters = mutableListOf<BcbVoter>()
-    val voters: List<BcbVoter>
-        get() { return _voters }
-    private val votersOpen = mutableListOf<BcbVoter>()
 
-    lateinit var structure: BcbBallotsStructure
-        private set
+    val ballots = BcbBallotsData()
 
     var phase = BcbPhase.GENESIS
         private set
@@ -38,24 +33,17 @@ class BcbDataPool {
                     phase = BcbPhase.SHOW_BALLOT
                 }
 
-                is BcbShowPollingStation -> _miners += user(transaction.data.name)
-                is BcbShowBallotStructure -> structure = transaction.data.structure
-                is BcbShowVoter -> {
-                    val v = BcbVoter(transaction.data.pollingStationName, "0", transaction.data.encryptedVoter)
-                    _voters += v
-                    votersOpen += v
+                is BcbShowPollingStation -> {
+                    _miners += user(transaction.data.name)
+                    ballots.pollingStations.add(transaction.data.name)
                 }
+                is BcbShowBallotStructure -> ballots.structure = transaction.data.structure
+                is BcbShowVoter -> ballots.addVoter(transaction.data.encryptedVoter, transaction.data.pollingStationName)
+
                 is BcbStartBallot -> phase = BcbPhase.BALLOT
 
-                is BcbBallotsGiven -> {
-                    // remove one open voter for the polling station
-                    // add the ballot to the number of valid/invalid ballots
-                }
-                is BcbVoterUsed -> {
-                    val v = BcbVoter(transaction.data.pollingStationName, "0", transaction.data.encryptedVoter)
-                    votersOpen -= v
-                    // add one open ballot for the polling station
-                }
+                is BcbBallotsGiven -> ballots.ballotsGiven(transaction.data.ballots, transaction.data.pollingStationName)
+                is BcbVoterUsed -> ballots.voterUsed(transaction.data.encryptedVoter, transaction.data.pollingStationName)
 
                 is BcbEndBallot -> phase = BcbPhase.BALLOT_FINISHED
             }
