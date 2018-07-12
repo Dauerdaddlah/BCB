@@ -5,6 +5,10 @@ class BcbBlockChain(
     private val blocks = mutableListOf<BcbBlock>()
     val empty: Boolean
         get() = blocks.isEmpty()
+    val lastBlock: BcbBlock?
+        get() {
+            return blocks.lastOrNull()
+        }
 
     fun addBlock(block: BcbBlock) {
         blocks += block

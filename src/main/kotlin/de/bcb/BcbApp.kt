@@ -2,18 +2,18 @@ package de.bcb
 
 import de.bcb.ballot.BcbBallotStructure
 import de.bcb.ballot.BcbBallotsStructure
-import de.bcb.conn.BcbNetwork
-import de.bcb.conn.BcbNetworkImpl
 import de.bcb.security.BcbHasher
 import de.bcb.security.BcbSha2Hasher
 import de.bcb.transaction.*
-import java.lang.Exception
+
+// to avoid compile errors
+val user = BcbUser("user")
 
 fun main(args: Array<String>) {
-    if(args.isEmpty()) {
-        throw Exception("Name of the local needs to be passed to the program")
-    }
-    val name = args[0]
+    //if(args.isEmpty()) {
+    //    throw Exception("Name of the local needs to be passed to the program")
+    //}
+    //val name = args[0]
 
     initUsers()
     initVoters()
@@ -86,7 +86,7 @@ private fun initBallotStructure() {
 }
 
 private fun creGenesisBlock() {
-    val data = ShowRoot(
+    val data = BcbShowRoot(
         encryptionKey = rootUser().encryption!!.publicKey,
         signatureKey = rootUser().signature!!.publicKey
     )
@@ -103,7 +103,7 @@ private fun creGenesisBlock() {
 
 fun prepareBallots() {
     for (station in env.pollingStations) {
-        val data = ShowPollingStation(station)
+        val data = BcbShowPollingStation(station)
 
         env.pool.addTransaction(
             BcbTransaction(
@@ -115,7 +115,7 @@ fun prepareBallots() {
     }
     for(voter in env.voters) {
         val station = user(voter.pollingStation)
-        val data = ShowVoter(
+        val data = BcbShowVoter(
             voter.pollingStation,
             station.encryption!!.encrypt(voter.toDataString()))
 
@@ -128,7 +128,7 @@ fun prepareBallots() {
         )
     }
 
-    val data = ShowBallotStructure(env.structure)
+    val data = BcbShowBallotStructure(env.structure)
 
     env.pool.addTransaction(
         BcbTransaction(
@@ -139,7 +139,7 @@ fun prepareBallots() {
 }
 
 fun startBallots() {
-    val data = StartBallot(
+    val data = BcbStartBallot(
         countPollingStations = env.pollingStations.size,
         countVoters = env.voters.size.toLong(),
         numElections = env.structure.structures.size
@@ -157,7 +157,7 @@ fun user(name: String): BcbUser {
     return env.users.find { it.name == name }!!
 }
 
-inline fun rootUser(): BcbUser = user(nameRoot)
+inline fun rootUser(): BcbUser { return user(nameRoot) }
 
 object env {
     val users = mutableListOf<BcbUser>()

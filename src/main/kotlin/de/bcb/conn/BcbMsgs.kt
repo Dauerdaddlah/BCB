@@ -11,7 +11,7 @@ class BcbMsgs {
         val TRX_BALLOT = "Ballot"
         val TRX_BALLOT_STRUCT = "BallotStructure"
         val TRX_POLL_STAT = "PollingStation"
-        val TRX_ROOT = "ShowRoot"
+        val TRX_ROOT = "BcbShowRoot"
         val TRX_VOTER = "showVoter"
         val TRX_VOTER_USED = "voterUsed"
         val TRX_START_BALLOT = "startBallot"

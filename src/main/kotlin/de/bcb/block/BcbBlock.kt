@@ -22,4 +22,16 @@ class BcbBlock (
 
     val creator: String,
     val signature: BcbSignature
-)
+) {
+    fun toCheckString(): String {
+        return "$version|$index|$prevHash${toString(transactions)}"
+    }
+
+    private fun toString(ts: List<BcbTransaction>): String {
+        return ts.map { it.toDataString() }.joinToString { "|" }
+    }
+
+    fun toHashString(): String {
+        return "${toCheckString()}|$creator|$signature"
+    }
+}

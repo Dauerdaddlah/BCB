@@ -19,7 +19,7 @@ class BcbBlockData(
 
         return BcbBlock(
             version = version,
-            prevHash = prevBlock?.hash ?: BcbHash(ByteArray(1)),
+            prevHash = prevBlock?.hash ?: BcbHash(ByteArray(0)),
             index = (prevBlock?.index ?: -1) + 1,
             timestamp = LocalDateTime.now(),
             transactions = transactions,
@@ -38,11 +38,12 @@ class BcbBlockData(
         return "${toCheckString()}|${user.name}|$sign"
     }
 
+    /** string representation of this blocks data for hashing and finding the user to sign */
     fun toCheckString(): String {
         return "$version|${prevBlock?.index?.plus(1)?:0}|${prevBlock?.hash?:0}${toString(transactions)}"
     }
 
-    fun toString(ts: List<BcbTransaction>): String {
+    private fun toString(ts: List<BcbTransaction>): String {
         return ts.map { it.toDataString() }.joinToString { "|" }
     }
 }

@@ -1,12 +1,8 @@
 package de.bcb.transaction
 
 import de.bcb.security.BcbPublicKey
-import de.bcb.security.BcbSignatureSystem
-import java.security.PublicKey
 
-class ShowRoot(
+data class BcbShowRoot(
     val signatureKey: BcbPublicKey,
     val encryptionKey: BcbPublicKey
-): TransactionData {
-
-}
+): BcbTransactionDataBase("BcbShowRoot", signatureKey, encryptionKey)
