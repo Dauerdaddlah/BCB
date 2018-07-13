@@ -1,6 +1,8 @@
 package de.bcb
 
+import de.bcb.ballot.Ballot
 import de.bcb.ballot.BcbBallotStructure
+import de.bcb.ballot.BcbBallots
 import de.bcb.ballot.BcbBallotsStructure
 import de.bcb.security.BcbHasher
 import de.bcb.security.BcbSha2Hasher
@@ -18,24 +20,40 @@ fun main(args: Array<String>) {
     initUsers()
     initVoters()
     initBallotStructure()
+
+    env.pool.minNumTrxPerBlock = 80
+    env.pool.avgNumTrxPerBlock = 100.0
+    env.pool.maxNumTrxPerBlock = 200
+
     creGenesisBlock()
+    println("Genesis Block created ${env.pool.chain}")
     prepareBallots()
+    println("Ballots prepared ${env.pool.chain}")
     startBallots()
+    println("Ballots started ${env.pool.chain}")
+    fakeMissingBallots(60, 100, 0.9, 0.9)
+    println("Ballots faked ${env.pool.chain}")
+    endBallots()
+    println("End Block created ${env.pool.chain}")
+    printResults()
 }
 
 private fun initUsers() {
     env.users.add(BcbUser(nameRoot))
+    env.pollingStationsSpecial += nameOnline
+    env.pollingStationsSpecial += nameLetter
     env.pollingStations += "LokalA"
     env.pollingStations += "LokalB"
     env.pollingStations += "LokalC"
+    env.pollingStationsAll += env.pollingStations
+    env.pollingStationsAll += env.pollingStationsSpecial
 
     env.pollingStations.forEach { env.users.add(BcbUser(it)) }
-    env.users.add(BcbUser("LokalA"))
-    env.users.add(BcbUser("LokalB"))
-    env.users.add(BcbUser("LokalC"))
+    env.pollingStationsSpecial.forEach { env.users.add(BcbUser(it)) }
 
     rootUser().tryLoadFromFiles()
     env.pollingStations.map { user(it) }.forEach { it.tryLoadFromFiles() }
+    env.pollingStationsSpecial.map { user(it) }.forEach { it.tryLoadFromFiles() }
 }
 
 private fun initVoters() {
@@ -102,7 +120,7 @@ private fun creGenesisBlock() {
 }
 
 fun prepareBallots() {
-    for (station in env.pollingStations) {
+    for (station in env.pollingStationsAll) {
         val data = BcbShowPollingStation(station)
 
         env.pool.addTransaction(
@@ -113,6 +131,7 @@ fun prepareBallots() {
             )
         )
     }
+    println("Prepared stations ${env.pool.chain}")
     for(voter in env.voters) {
         val station = user(voter.pollingStation)
         val data = BcbShowVoter(
@@ -127,6 +146,7 @@ fun prepareBallots() {
             )
         )
     }
+    println("Prepared ${env.voters.size} voters ${env.pool.chain}")
 
     val data = BcbShowBallotStructure(env.structure)
 
@@ -136,11 +156,12 @@ fun prepareBallots() {
             rootUser().signature!!.sign(data.toDataString())
         )
     )
+    println("Prepared structure ${env.pool.chain}")
 }
 
 fun startBallots() {
     val data = BcbStartBallot(
-        countPollingStations = env.pollingStations.size,
+        countPollingStations = env.pollingStationsAll.size,
         countVoters = env.voters.size.toLong(),
         numElections = env.structure.structures.size
     )
@@ -153,6 +174,138 @@ fun startBallots() {
     )
 }
 
+fun fakeMissingBallots(minChunkSize: Int, maxChunkSize: Int, turnout: Double, valid: Double) {
+    val openVoters = env.pool.ballots.voters.filter { it.stationUsed == null }.toMutableList()
+
+    while(!openVoters.isEmpty()) {
+        val size = Math.min(openVoters.size, (minChunkSize + Math.random() * (maxChunkSize - minChunkSize)).toInt())
+
+        val temp = mutableListOf<BcbBallotsData.Voter>()
+
+        repeat(size) {
+            val t = openVoters.randomElement()
+            val voted = Math.random() < turnout
+            val station = env.pollingStationsAll.randomElement()
+
+            openVoters -= t
+            if (voted) {
+                temp += t
+            }
+
+            useVoter(
+                encryptedName = t.encryptedName,
+                station = if (voted) station else t.station,
+                voted = voted
+            )
+        }
+
+        for(voter in temp) {
+            fakeBallotsFor(voter, false, valid)
+        }
+
+        println("Faked chunk of $size voters from which ${temp.size} actually voted ${env.pool.chain}")
+    }
+}
+
+fun fakeBallotsFor(voter: BcbBallotsData.Voter, useVoter: Boolean = true, valid: Double) {
+    if (voter.stationUsed == null && !useVoter) {
+        TODO()
+    }
+
+    if (voter.stationUsed == null) {
+        useVoter(
+            encryptedName = voter.encryptedName,
+            voted = true,
+            station = env.pollingStationsAll.randomElement()
+        )
+    }
+
+    val data = BcbBallotsGiven(
+        pollingStationName = voter.stationUsed!!,
+        ballots = fakeBallot(valid)
+    )
+
+    env.pool.addTransaction(
+        BcbTransaction(
+            data,
+            user(voter.stationUsed!!).signature!!.sign(data.toDataString())
+        )
+    )
+}
+
+fun useVoter(encryptedName: String, voted: Boolean, station: String) {
+    val data = BcbVoterUsed(
+        encryptedVoter = encryptedName,
+        pollingStationName = station,
+        voted = voted
+    )
+    env.pool.addTransaction(
+        BcbTransaction(
+            data,
+            rootUser().signature!!.sign(data.toDataString()),
+            user(station).signature!!.sign(data.toDataString())
+        )
+    )
+}
+
+fun fakeBallot(valid: Double): BcbBallots {
+    val ballots = mutableListOf<Ballot>()
+
+    for (struct in env.pool.ballots.structure!!.structures) {
+        if (Math.random() < valid) {
+            val candidates = ArrayList(struct.candidates)
+            val votes = mutableListOf<String>()
+
+            repeat(struct.numVotes) {
+                val c = candidates.randomElement()
+                candidates -= c
+                votes += c
+            }
+
+            ballots += Ballot(votes)
+        } else {
+            ballots += Ballot(emptyList(), false)
+        }
+    }
+
+    return BcbBallots(ballots)
+}
+
+fun endBallots() {
+    val data = BcbEndBallot(
+    )
+
+    env.pool.addTransaction(
+        BcbTransaction(
+            data,
+            rootUser().signature!!.sign(data.toDataString())
+        )
+    )
+}
+
+fun printResults() {
+    val voters = env.pool.ballots.voters.count { it.voted }
+    val votersOnline = env.pool.ballots.voters.count { it.stationUsed == nameOnline }
+    val votersLetter = env.pool.ballots.voters.count { it.stationUsed == nameLetter }
+    val votersOutside = env.pool.ballots.voters.count { it.stationUsed != it.station } - votersOnline - votersLetter
+
+    val ballots = env.pool.ballots.ballots.size
+    val ballotsInvalid = env.pool.ballots.ballots.count {b -> b.ballots.find { it.valid } == null }
+    val ballotsPartiallyInvalid = env.pool.ballots.ballots.count {b -> b.ballots.count {bb -> bb.valid }.let { it > 0 && it < b.ballots.size } }
+
+    println("votes: $voters")
+    println("nonvoters ${env.voters.size - voters}")
+    println("${voters / env.voters.size.toDouble() * 100.0} %")
+    println()
+    println("voting at some other place: $votersOutside")
+    println("online voters: $votersOnline")
+    println("voters using letters $votersLetter")
+    println()
+    println("Ballots given: $ballots")
+    println("Invalid ballots $ballotsInvalid")
+    println("Partially invalid ballots $ballotsPartiallyInvalid")
+}
+
 fun user(name: String): BcbUser {
     return env.users.find { it.name == name }!!
 }
@@ -162,7 +315,9 @@ inline fun rootUser(): BcbUser { return user(nameRoot) }
 object env {
     val users = mutableListOf<BcbUser>()
 
+    val pollingStationsAll = mutableListOf<String>()
     val pollingStations = mutableListOf<String>()
+    val pollingStationsSpecial = mutableListOf<String>()
 
     val pool = BcbDataPool()
 
@@ -171,4 +326,8 @@ object env {
     val voters = mutableListOf<BcbVoter>()
 
     var structure: BcbBallotsStructure = BcbBallotsStructure(emptyList())
+}
+
+fun <T> List<T>.randomElement(): T {
+    return this[Math.min(size, (Math.random() * size).toInt())]!!
 }

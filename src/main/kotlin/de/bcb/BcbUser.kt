@@ -10,6 +10,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 val nameRoot = "root"
+val nameOnline = "online"
+val nameLetter = "letter"
 
 class BcbUser(val name: String) {
     val root = name == nameRoot
