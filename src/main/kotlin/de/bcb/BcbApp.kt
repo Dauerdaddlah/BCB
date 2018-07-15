@@ -7,6 +7,8 @@ import de.bcb.ballot.BcbBallotsStructure
 import de.bcb.security.BcbHasher
 import de.bcb.security.BcbSha2Hasher
 import de.bcb.transaction.*
+import io.javalin.ApiBuilder.get
+import io.javalin.Javalin
 
 // to avoid compile errors
 val user = BcbUser("user")
@@ -36,6 +38,23 @@ fun main(args: Array<String>) {
     endBallots()
     println("End Block created ${env.pool.chain}")
     printResults()
+
+    val app =
+            Javalin
+                    .create()
+                    .enableCorsForAllOrigins()
+                    .port(8080)
+                    .start()
+
+    app.routes {
+        get("pollingStations") { ctx ->
+            ctx.json(env.pollingStations)
+        }
+
+        get("ballots") { ctx ->
+            ctx.json(env.structure)
+        }
+    }
 }
 
 private fun initUsers() {
@@ -79,6 +98,7 @@ private fun initBallotStructure() {
     env.structure = BcbBallotsStructure(
         listOf(
             BcbBallotStructure(
+            "Wahlkreisabgeordneter",
             1,
                 listOf(
                     "Ken Kannix",
@@ -92,6 +112,7 @@ private fun initBallotStructure() {
                 )
             ),
             BcbBallotStructure(
+                "Partei",
                 1,
                 listOf(
                     "SPD",

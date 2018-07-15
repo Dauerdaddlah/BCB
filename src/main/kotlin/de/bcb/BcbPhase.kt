@@ -11,6 +11,8 @@ enum class BcbPhase {
      * in this phase the locals, ballots and ids will be announced
      * this phase end as soon as everything is announced, as indicated
      * by the startBallot-transaction
+     *
+     * root
      */
     SHOW_BALLOT,
     /**
@@ -21,6 +23,8 @@ enum class BcbPhase {
     /**
      * final phase, starting with the endBallot-transaction.
      * in this phase no valid transaction can be send anymore
+     *
+     * root
      */
     BALLOT_FINISHED
 
