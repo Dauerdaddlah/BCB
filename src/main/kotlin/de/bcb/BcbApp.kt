@@ -8,6 +8,7 @@ import de.bcb.security.BcbHasher
 import de.bcb.security.BcbSha2Hasher
 import de.bcb.transaction.*
 import io.javalin.ApiBuilder.get
+import io.javalin.ApiBuilder.post
 import io.javalin.Javalin
 
 // to avoid compile errors
@@ -35,16 +36,13 @@ fun main(args: Array<String>) {
     println("Ballots started ${env.pool.chain}")
     fakeMissingBallots(60, 100, 0.9, 0.9)
     println("Ballots faked ${env.pool.chain}")
-    endBallots()
-    println("End Block created ${env.pool.chain}")
-    printResults()
 
     val app =
             Javalin
-                    .create()
-                    .enableCorsForAllOrigins()
-                    .port(8080)
-                    .start()
+                .create()
+                .enableCorsForAllOrigins()
+                .port(8080)
+                .start()
 
     app.routes {
         get("pollingStations") { ctx ->
@@ -53,6 +51,18 @@ fun main(args: Array<String>) {
 
         get("ballots") { ctx ->
             ctx.json(env.structure)
+        }
+
+        get("blocks") { ctx ->
+            ctx.json(env.pool.chain.blocks)
+        }
+
+        post("vote") { ctx ->
+            // insert vote from frontend
+
+            endBallots()
+            println("End Block created ${env.pool.chain}")
+            printResults()
         }
     }
 }

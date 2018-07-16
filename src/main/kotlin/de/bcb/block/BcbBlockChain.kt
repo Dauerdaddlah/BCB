@@ -2,7 +2,7 @@ package de.bcb.block
 
 class BcbBlockChain(
 ) {
-    private val blocks = mutableListOf<BcbBlock>()
+    val blocks = mutableListOf<BcbBlock>()
     val empty: Boolean
         get() = blocks.isEmpty()
     val lastBlock: BcbBlock?
