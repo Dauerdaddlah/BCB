@@ -1,6 +1,7 @@
 package de.bcb
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import de.bcb.ballot.Ballot
 import de.bcb.ballot.BcbBallotStructure
 import de.bcb.ballot.BcbBallots
@@ -57,10 +58,9 @@ fun main(args: Array<String>) {
         }
         post("vote") { ctx ->
             // insert vote from frontend
-            val mapper = ObjectMapper()
+            val mapper = jacksonObjectMapper()
             val response = mapper.readValue(ctx.body(), ResponseData::class.java)
 
-            // val response = ctx.bodyAsClass(ResponseData::class.java)
             val voter = BcbVoter(response.selectedPollingStation, response.constituencyId, response.firstName)
             val station = user(response.selectedPollingStation)
 

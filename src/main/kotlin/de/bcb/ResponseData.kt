@@ -1,6 +1,6 @@
 package de.bcb
 
-class ResponseData(
+data class ResponseData(
         val firstName: String,
         val lastName: String,
         val selectedPollingStation: String,
@@ -8,6 +8,4 @@ class ResponseData(
         val birthDay: String,
         val wahlkreisabgeordneter: String,
         val partei: String
-) {
-
-}
+)
