@@ -1,5 +1,6 @@
 package de.bcb
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import de.bcb.ballot.Ballot
 import de.bcb.ballot.BcbBallotStructure
 import de.bcb.ballot.BcbBallots
@@ -24,9 +25,9 @@ fun main(args: Array<String>) {
     initVoters()
     initBallotStructure()
 
-    env.pool.minNumTrxPerBlock = 80
-    env.pool.avgNumTrxPerBlock = 100.0
-    env.pool.maxNumTrxPerBlock = 200
+    env.pool.minNumTrxPerBlock = 1
+    env.pool.avgNumTrxPerBlock = 25.0
+    env.pool.maxNumTrxPerBlock = 50
 
     creGenesisBlock()
     println("Genesis Block created ${env.pool.chain}")
@@ -34,8 +35,6 @@ fun main(args: Array<String>) {
     println("Ballots prepared ${env.pool.chain}")
     startBallots()
     println("Ballots started ${env.pool.chain}")
-    fakeMissingBallots(60, 100, 0.9, 0.9)
-    println("Ballots faked ${env.pool.chain}")
 
     val app =
             Javalin
@@ -56,10 +55,38 @@ fun main(args: Array<String>) {
         get("blocks") { ctx ->
             ctx.json(env.pool.chain.blocks)
         }
-
         post("vote") { ctx ->
             // insert vote from frontend
+            val mapper = ObjectMapper()
+            val response = mapper.readValue(ctx.body(), ResponseData::class.java)
 
+            // val response = ctx.bodyAsClass(ResponseData::class.java)
+            val voter = BcbVoter(response.selectedPollingStation, response.constituencyId, response.firstName)
+            val station = user(response.selectedPollingStation)
+
+            useVoter(station.encryption!!.encrypt(voter.toDataString()), true, nameOnline)
+
+            val data = BcbBallotsGiven(
+                    pollingStationName = station.name,
+                    ballots = BcbBallots(
+                            listOf(
+                                    Ballot(
+                                            listOf(response.wahlkreisabgeordneter)),
+                                    Ballot(
+                                            listOf(response.partei))
+                            )
+                    )
+            )
+
+            env.pool.addTransaction(
+                    BcbTransaction(
+                            data,
+                            user(nameOnline).signature!!.sign(data.toDataString())
+                    )
+            )
+
+            fakeMissingBallots(60, 100, 0.9, 0.9)
+            println("Ballots faked ${env.pool.chain}")
             endBallots()
             println("End Block created ${env.pool.chain}")
             printResults()

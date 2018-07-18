@@ -6,6 +6,8 @@ import java.util.*
 class BcbHash(
     private val hash: ByteArray
 ) {
+    val data: String
+            get() { return toString() }
     companion object {
         private val charset = StandardCharsets.UTF_8
     }
